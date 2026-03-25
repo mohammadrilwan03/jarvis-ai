@@ -21,7 +21,7 @@ function App() {
     window.speechSynthesis.speak(utter);
   };
 
-  // 🤖 AI call (IMPORTANT: backend URL fixed)
+  // 🤖 AI CALL
   const askAI = async (msg) => {
     if (!msg || isProcessingRef.current) return;
 
@@ -58,13 +58,13 @@ function App() {
     }, 800);
   };
 
-  // 🎤 Voice recognition
+  // 🎤 VOICE
   const startVoice = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Speech Recognition not supported in this browser");
+      alert("Speech Recognition not supported");
       return;
     }
 
@@ -84,7 +84,7 @@ function App() {
     recognition.start();
   };
 
-  // 🧠 Commands
+  // 🧠 COMMANDS
   const handleCommand = (text) => {
     window.speechSynthesis.cancel();
 
@@ -120,9 +120,15 @@ function App() {
       return;
     }
 
+    // ✅ FIXED TIME (WORKS IN MOBILE + LAPTOP)
     if (text.includes("time")) {
-      const time = new Date().toLocaleTimeString();
-      const reply = "The current time is " + time;
+      const time = new Date().toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+
+      const reply = `Current time is ${time}`;
 
       setStatus("Speaking 🕒");
       setResponse(reply);
