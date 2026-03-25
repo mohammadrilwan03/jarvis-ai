@@ -7,19 +7,21 @@ function App() {
 
   const isProcessingRef = useRef(false);
 
+  // 🔊 Speak function
   const speak = (text) => {
     setStatus("Speaking 🔊");
     window.speechSynthesis.cancel();
 
-    const utter = new SpeechSynthesisUtterance(
-      text.replace(/https?:\/\/\S+/g, "")
-    );
+    const cleanText = text.replace(/https?:\/\/\S+/g, "");
+
+    const utter = new SpeechSynthesisUtterance(cleanText);
 
     utter.onend = () => setStatus("Idle 💤");
 
     window.speechSynthesis.speak(utter);
   };
 
+  // 🤖 AI call (IMPORTANT: backend URL fixed)
   const askAI = async (msg) => {
     if (!msg || isProcessingRef.current) return;
 
@@ -27,18 +29,27 @@ function App() {
     setStatus("Thinking 🤔");
 
     try {
-      const res = await fetch("http://localhost:5000/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: msg }),
-      });
+      const res = await fetch(
+        "https://jarvis-ai-3-glbp.onrender.com/ask",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input: msg }),
+        }
+      );
 
       const data = await res.json();
-      const answer = data.answer.replace(/https?:\/\/\S+/g, "");
+
+      const answer = (data.answer || "No response").replace(
+        /https?:\/\/\S+/g,
+        ""
+      );
 
       setResponse(answer);
       speak(answer);
-    } catch {
+    } catch (err) {
+      console.log(err);
+      setResponse("Error connecting to AI");
       speak("AI error occurred");
     }
 
@@ -47,12 +58,13 @@ function App() {
     }, 800);
   };
 
+  // 🎤 Voice recognition
   const startVoice = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Speech Recognition not supported");
+      alert("Speech Recognition not supported in this browser");
       return;
     }
 
@@ -72,12 +84,12 @@ function App() {
     recognition.start();
   };
 
+  // 🧠 Commands
   const handleCommand = (text) => {
     window.speechSynthesis.cancel();
 
     if (text.includes("open google")) {
       setStatus("Opening Google 🌐");
-      setResponse("Opening Google");
       speak("Opening Google");
       window.location.href = "https://www.google.com";
       return;
@@ -85,7 +97,6 @@ function App() {
 
     if (text.includes("open youtube")) {
       setStatus("Opening YouTube 🎬");
-      setResponse("Opening YouTube");
       speak("Opening YouTube");
       window.location.href = "https://www.youtube.com";
       return;
@@ -94,16 +105,15 @@ function App() {
     if (text.includes("search")) {
       const q = text.replace("search", "").trim();
       setStatus("Searching 🔍");
-      setResponse("Searching " + q);
       speak("Searching " + q);
-      window.location.href = "https://www.google.com/search?q=" + q;
+      window.location.href =
+        "https://www.google.com/search?q=" + q;
       return;
     }
 
     if (text.includes("play")) {
       const q = text.replace("play", "").trim();
       setStatus("Playing 🎵");
-      setResponse("Playing " + q);
       speak("Playing " + q);
       window.location.href =
         "https://www.youtube.com/results?search_query=" + q;
@@ -127,9 +137,8 @@ function App() {
   const isSpeaking = status.includes("Speaking");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-blue-950 text-white p-3 sm:p-6 transition-all duration-500">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-blue-950 text-white p-3 sm:p-6">
 
-      {/* CARD */}
       <div
         className={`w-full max-w-2xl p-4 sm:p-6 rounded-3xl backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-500 
         ${isSpeaking ? "shadow-blue-500/40 scale-[1.01]" : ""}
@@ -158,39 +167,37 @@ function App() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask anything..."
-          className="w-full p-2 sm:p-3 text-sm sm:text-base rounded-xl bg-black/40 border border-white/20 outline-none focus:border-blue-400 transition-all duration-300"
+          className="w-full p-2 sm:p-3 text-sm sm:text-base rounded-xl bg-black/40 border border-white/20 outline-none focus:border-blue-400"
         />
 
         {/* BUTTONS */}
         <div className="flex flex-col sm:flex-row gap-3 mt-4">
 
-          {/* AI BUTTON */}
           <button
             onClick={() => askAI(input)}
-            className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-200 p-2 sm:p-3 rounded-xl text-sm sm:text-base font-semibold"
+            className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 p-2 sm:p-3 rounded-xl font-semibold"
           >
             🤖 Ask AI
           </button>
 
-          {/* VOICE BUTTON */}
           <button
             onClick={startVoice}
-            className={`w-full p-2 sm:p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300
+            className={`w-full p-2 sm:p-3 rounded-xl font-semibold transition-all
             ${isListening ? "bg-green-500 animate-pulse" : "bg-green-600 hover:bg-green-700"}`}
           >
             🎤 Voice
           </button>
+
         </div>
 
         {/* RESPONSE */}
-        <div className="mt-6 bg-black/30 border border-white/10 p-3 sm:p-4 rounded-xl min-h-[100px] sm:min-h-[120px] transition-all duration-300">
-          <h3 className="text-gray-300 text-sm sm:text-base mb-2">
-            Reply:
-          </h3>
-          <p className="text-white text-sm sm:text-base leading-relaxed break-words">
+        <div className="mt-6 bg-black/30 border border-white/10 p-3 sm:p-4 rounded-xl min-h-[120px]">
+          <h3 className="text-gray-300 mb-2">Reply:</h3>
+          <p className="text-white break-words">
             {response || "Waiting for your command..."}
           </p>
         </div>
+
       </div>
     </div>
   );
