@@ -3,31 +3,39 @@ import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
 
-// ✅ Load .env from ROOT (outside server folder)
+// ✅ Load .env from ROOT (important for your case)
 dotenv.config({ path: "../.env" });
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Check API key (safety)
+// ✅ Root route (fix "Cannot GET /")
+app.get("/", (req, res) => {
+  res.send("Jarvis Server is Running 🚀");
+});
+
+// ✅ Check API key
 if (!process.env.OPENAI_API_KEY) {
   console.error("❌ OPENAI_API_KEY not found in .env");
   process.exit(1);
 }
 
+// ✅ Groq (OpenAI compatible)
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   baseURL: "https://api.groq.com/openai/v1",
 });
 
+// ✅ Main API
 app.post("/ask", async (req, res) => {
   try {
     const input = req.body.input;
 
-    // ✅ Validation
     if (!input) {
-      return res.status(400).json({ answer: "Please provide input" });
+      return res.status(400).json({
+        answer: "Please provide input",
+      });
     }
 
     const response = await client.chat.completions.create({
@@ -57,7 +65,7 @@ app.post("/ask", async (req, res) => {
   }
 });
 
-// ✅ Use dynamic port (for deployment also)
+// ✅ Port (Render + local)
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
